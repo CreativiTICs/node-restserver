@@ -2,10 +2,18 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const _ = require("underscore");
 const Usuario = require("../models/usuario");
+const {
+  verificaToken,
+  verificaAdminRole,
+} = require("../midlewares/autenticacion");
 
 const app = express();
 
-app.get("/usuario", function (req, res) {
+app.get("/usuario", verificaToken, (req, res) => {
+  return res.json({
+    usuario: req.usuario,
+  });
+
   let desde = req.query.desde || 0;
   desde = Number(desde);
   let limite = req.query.limite || 5;
@@ -32,7 +40,7 @@ app.get("/usuario", function (req, res) {
     });
 });
 
-app.post("/usuario", function (req, res) {
+app.post("/usuario", [verificaToken, verificaAdminRole], function (req, res) {
   let body = req.body;
 
   let usuario = new Usuario({
@@ -57,66 +65,74 @@ app.post("/usuario", function (req, res) {
   });
 });
 
-app.put("/usuario/:id", function (req, res) {
-  let id = req.params.id;
+app.put(
+  "/usuario/:id",
+  [verificaToken, verificaAdminRole],
+  function (req, res) {
+    let id = req.params.id;
 
-  let body = _.pick(req.body, ["nombre", "email", "img", "role", "estado"]);
+    let body = _.pick(req.body, ["nombre", "email", "img", "role", "estado"]);
 
-  Usuario.findByIdAndUpdate(
-    id,
-    body,
-    { new: true, runValidators: true, context: "query" },
-    (err, usuarioDB) => {
-      if (err) {
-        return res.status(400).json({
-          ok: false,
-          err,
+    Usuario.findByIdAndUpdate(
+      id,
+      body,
+      { new: true, runValidators: true, context: "query" },
+      (err, usuarioDB) => {
+        if (err) {
+          return res.status(400).json({
+            ok: false,
+            err,
+          });
+        }
+
+        res.json({
+          ok: true,
+          usuario: usuarioDB,
         });
       }
+    );
+  }
+);
 
-      res.json({
-        ok: true,
-        usuario: usuarioDB,
-      });
-    }
-  );
-});
+app.delete(
+  "/usuario/:id",
+  [verificaToken, verificaAdminRole],
+  function (req, res) {
+    let id = req.params.id;
 
-app.delete("/usuario/:id", function (req, res) {
-  let id = req.params.id;
+    //Borrar de la BD
+    // Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
 
-  //Borrar de la BD
-  // Usuario.findByIdAndRemove(id, (err, usuarioBorrado) => {
+    let cambiaEstado = { estado: false };
 
-  let cambiaEstado = { estado: false };
+    Usuario.findByIdAndUpdate(
+      id,
+      cambiaEstado,
+      { new: true, context: "query" },
+      (err, usuarioBorrado) => {
+        if (err) {
+          return res.status(400).json({
+            ok: false,
+            err,
+          });
+        }
 
-  Usuario.findByIdAndUpdate(
-    id,
-    cambiaEstado,
-    { new: true, context: "query" },
-    (err, usuarioBorrado) => {
-      if (err) {
-        return res.status(400).json({
-          ok: false,
-          err,
+        if (!usuarioBorrado) {
+          return res.status(400).json({
+            ok: false,
+            err: {
+              message: "Usuario no encontrado",
+            },
+          });
+        }
+
+        res.json({
+          ok: true,
+          usuario: usuarioBorrado,
         });
       }
-
-      if (!usuarioBorrado) {
-        return res.status(400).json({
-          ok: false,
-          err: {
-            message: "Usuario no encontrado",
-          },
-        });
-      }
-
-      res.json({
-        ok: true,
-        usuario: usuarioBorrado,
-      });
-    }
-  );
-});
+    );
+  }
+);
 
 module.exports = app;
