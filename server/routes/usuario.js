@@ -10,10 +10,6 @@ const {
 const app = express();
 
 app.get("/usuario", verificaToken, (req, res) => {
-  return res.json({
-    usuario: req.usuario,
-  });
-
   let desde = req.query.desde || 0;
   desde = Number(desde);
   let limite = req.query.limite || 5;
