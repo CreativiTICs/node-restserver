@@ -2,5 +2,5 @@ node_modules/
 
 # /uploads/product/*
 # /uploads/user/*
-# !/uploads/product/.gitkeep
-# !/uploads/user/.gitkeep
+!/uploads/product/.gitkeep
+!/uploads/user/.gitkeep
