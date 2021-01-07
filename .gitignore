@@ -1,6 +1,6 @@
 node_modules/
 
-# /uploads/product/*
-# /uploads/user/*
+/uploads/product/*
+/uploads/user/*
 !/uploads/product/.gitkeep
 !/uploads/user/.gitkeep
